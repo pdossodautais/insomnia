@@ -29,6 +29,11 @@ Optionally, the Mac locks when the lid is reopened (menu → Lock When Lid Opens
 
 Requires macOS 14 or later.
 
+**Download:** get `Insomnia.zip` from the [latest release](https://github.com/pdossodautais/insomnia/releases/latest)
+(universal app, not notarized: see the release notes to open it).
+
+**Build from source:**
+
 ```sh
 git clone https://github.com/pdossodautais/insomnia.git
 cd insomnia
