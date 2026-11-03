@@ -26,3 +26,6 @@
 "Your Mac is too hot: sleep is back to normal." = "Mac 温度过高：睡眠已恢复正常。";
 "Insomnia is in the menu bar" = "Insomnia 位于菜单栏中";
 "Click ∞ for the menu, right-click to stay awake." = "点按 ∞ 打开菜单，右键点按保持唤醒。";
+"Stay Awake While Claude Works" = "Claude 工作时保持唤醒";
+"Awake while Claude works" = "Claude 工作时保持唤醒";
+"Stay Awake After Claude Finishes" = "Claude 完成后保持唤醒";

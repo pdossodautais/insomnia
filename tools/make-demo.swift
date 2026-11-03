@@ -35,6 +35,7 @@ struct Scene {
 let menuItems: [(String, String, Bool)] = [   // title, right side, enabled
     ("Awake until you turn it off", "", false), ("-", "", false),
     ("Allow Sleep", "⌃⌥⌘I", true), ("Stay Awake For", "›", true), ("Stay Awake While App Runs", "›", true),
+    ("Stay Awake While Claude Works", "", true), ("Stay Awake After Claude Finishes", "›", true),
     ("Black Screen (No Lock)", "", true), ("-", "", false),
     ("Allow Sleep Below", "›", true), ("Lock When Lid Opens", "", true), ("✓  Open at Login", "", true), ("-", "", false),
     ("Quit Insomnia", "⌘Q", true),
@@ -128,7 +129,8 @@ var frames: [(Scene, Double)] = [
     (Scene(awake: true, menu: true, caption: "Click: the menu"), 1.2),
     (Scene(awake: true, menu: true, highlight: 3, caption: "Stay awake for a while…"), 1.0),
     (Scene(awake: true, menu: true, highlight: 4, caption: "…or while an app runs"), 1.0),
-    (Scene(awake: true, menu: true, highlight: 5, caption: "Black screen without locking"), 1.2),
+    (Scene(awake: true, menu: true, highlight: 5, caption: "…or while Claude works, with time to reply"), 1.4),
+    (Scene(awake: true, menu: true, highlight: 7, caption: "Black screen without locking"), 1.2),
 ]
 for step in 0...10 {
     let lid = CGFloat(step) / 10

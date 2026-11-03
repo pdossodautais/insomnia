@@ -5,7 +5,8 @@ Made for remote access, long builds and AI agents that need to see the screen.
 
 ![Insomnia in the menu bar](docs/demo.gif)
 
-- **Click**: menu — stay awake for a duration or while an app runs, black screen, settings.
+- **Click**: menu — stay awake for a duration, while an app runs or while Claude works, black
+  screen, settings.
 - **Right click** or **⌃⌥⌘I**: toggle between awake (∞ filled) and normal sleep (∞ outline).
 
 While awake, closing the lid turns the screen and keyboard backlight off instead of sleeping.
@@ -14,6 +15,17 @@ the previous brightness back.
 
 Available in English, French, Spanish, German, Italian, Portuguese, Japanese, Korean and
 Simplified Chinese, following your Mac's language.
+
+## While Claude works
+
+With **Stay Awake While Claude Works** (menu), Insomnia stays awake on its own whenever a
+[Claude Code](https://claude.com/claude-code) session is working, in its desktop app or a
+terminal.
+
+Sleep comes back 30 seconds after the last session finishes, or after the time chosen in
+**Stay Awake After Claude Finishes**, up to an hour, which leaves time to reply remotely. If
+the lid is closed by then and no external display is connected, the Mac goes to sleep. If you
+turn the awake mode off by hand, it stays off until the current work ends.
 
 ## Safety
 
@@ -101,3 +113,6 @@ MIT — see [LICENSE](LICENSE).
 
 Screen and keyboard brightness rely on private Apple frameworks (DisplayServices,
 CoreBrightness) that a macOS update could break; sleep control would keep working.
+
+Following Claude relies on the session files in `~/.claude/sessions`, an internal Claude Code
+format that an update could change. Background tasks that outlast a turn aren't counted.
