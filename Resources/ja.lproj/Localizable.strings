@@ -27,5 +27,6 @@
 "Insomnia is in the menu bar" = "Insomniaはメニューバーにあります";
 "Click ∞ for the menu, right-click to stay awake." = "∞をクリックでメニュー、右クリックでスリープを防止します。";
 "Stay Awake While Claude Works" = "Claudeの作業中はスリープしない";
-"Awake while Claude works" = "Claudeの作業中はスリープしません";
+"Claude is working" = "Claudeが作業中";
+"No Claude session working: awake for %@ more" = "作業中のClaudeセッションなし:あと%@スリープしません";
 "Stay Awake After Claude Finishes" = "Claudeの作業終了後もスリープしない時間";

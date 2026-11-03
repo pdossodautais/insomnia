@@ -251,6 +251,10 @@ enum Claude {
     /// Bridges the moment between two turns, or longer if chosen in the menu.
     private static var grace: TimeInterval { max(30, TimeInterval(Settings.claudeDelay * 60)) }
     private static var lastBusy = Date.distantPast
+    /// Time left after the work has ended; nil while a session is working.
+    static var timeLeft: TimeInterval? {
+        isBusy ? nil : grace - Date().timeIntervalSince(lastBusy)
+    }
 
     static var isInstalled: Bool { FileManager.default.fileExists(atPath: directory.path) }
 
@@ -294,7 +298,8 @@ enum Session: Equatable {
         case .manual: L("Awake until you turn it off")
         case .until(let end): String(format: L("Awake for %@ more"), formatDuration(end.timeIntervalSinceNow))
         case .whileRunning(_, let name): String(format: L("Awake while %@ is running"), name)
-        case .whileClaudeWorks: L("Awake while Claude works")
+        case .whileClaudeWorks:
+            Claude.timeLeft.map { String(format: L("No Claude session working: awake for %@ more"), formatDuration($0)) } ?? L("Claude is working")
         }
     }
 }
@@ -376,6 +381,16 @@ final class App: NSObject, NSApplicationDelegate {
     private let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
     private var session: Session? { didSet { render() } }
     private var awake: Bool { session != nil }
+    /// Awake by choice, as opposed to only because Claude is working.
+    private var awakeByHand: Bool { awake && session != .whileClaudeWorks }
+    private var batteryLow: Bool { Power.batteryLevelIfUnplugged().map { $0 < Settings.batteryFloor } ?? false }
+    /// Critical heat always stops; serious heat stops when the lid is closed (e.g. in a bag).
+    private var tooHot: Bool {
+        let state = ProcessInfo.processInfo.thermalState
+        return state == .critical || (state == .serious && Power.lidClosed)
+    }
+    /// The option applies whatever else is chosen; only the safety limits override it.
+    private var claudeHolds: Bool { Settings.followClaude && Claude.isWorking && !batteryLow && !tooHot }
     /// Screen and keyboard at 0 without turning the display off: no lock, screenshots keep working.
     private var dimmed: Bool { brightnessWatcher != nil }
     /// Prevents the display from sleeping (and so from locking) while awake.
@@ -387,8 +402,6 @@ final class App: NSObject, NSApplicationDelegate {
     private var renderedAwake: Bool?
     /// Keeps App Nap from delaying the check on Claude while following it.
     private var followActivity: NSObjectProtocol?
-    /// Sleep was restored during Claude's work: leave it alone until that work ends.
-    private var claudeDismissed = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert]) { _, _ in }
@@ -479,17 +492,13 @@ final class App: NSObject, NSApplicationDelegate {
     private func tick() {
         // Sleep can also be changed outside the app (pmset on the command line).
         if Power.sleepDisabled != awake { Power.sleepDisabled ? begin(.manual) : end() }
-        let claudeWorking = Settings.followClaude && Claude.isWorking
-        if !claudeWorking { claudeDismissed = false }
         guard let session else {
-            guard claudeWorking, !claudeDismissed else { return }
-            // Without the sudoers rule, don't ask again until Claude's next work.
-            if Power.canChangeSleep { begin(.whileClaudeWorks) } else { claudeDismissed = true }
+            if claudeHolds, Power.canChangeSleep { begin(.whileClaudeWorks) }
             return
         }
 
         if session.isOver {
-            if claudeWorking {
+            if claudeHolds {
                 begin(.whileClaudeWorks)
             } else if session == .whileClaudeWorks {
                 end()
@@ -497,8 +506,7 @@ final class App: NSObject, NSApplicationDelegate {
             } else {
                 end(notice: L("Sleep is back to normal."))
             }
-        } else if let level = Power.batteryLevelIfUnplugged(), level < Settings.batteryFloor {
-            claudeDismissed = true
+        } else if batteryLow, let level = Power.batteryLevelIfUnplugged() {
             end(notice: String(format: L("Battery at %d%%: sleep is back to normal."), level))
         } else {
             if !dimmed { rememberLevels() }
@@ -506,11 +514,8 @@ final class App: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// Critical heat always stops; serious heat stops when the lid is closed (e.g. in a bag).
     private func checkThermalState() {
-        let state = ProcessInfo.processInfo.thermalState
-        guard awake, state == .critical || (state == .serious && Power.lidClosed) else { return }
-        claudeDismissed = true
+        guard awake, tooHot else { return }
         end(notice: L("Your Mac is too hot: sleep is back to normal."))
     }
 
@@ -573,12 +578,12 @@ final class App: NSObject, NSApplicationDelegate {
     }
 
     @objc private func toggle() {
-        awake ? allowSleep() : begin(.manual)
+        awakeByHand ? allowSleep() : begin(.manual)
     }
 
+    /// Ends what was chosen by hand; the Claude option goes on applying.
     private func allowSleep() {
-        claudeDismissed = true
-        end()
+        if claudeHolds { session = .whileClaudeWorks } else { end() }
     }
 
     @objc private func toggleFollowClaude() {
@@ -635,9 +640,12 @@ final class App: NSObject, NSApplicationDelegate {
         let menu = NSMenu()
         if let session {
             menu.addItem(withTitle: session.summary, action: nil, keyEquivalent: "")
+            if awakeByHand, claudeHolds {
+                menu.addItem(withTitle: Session.whileClaudeWorks.summary, action: nil, keyEquivalent: "")
+            }
             menu.addItem(.separator())
         }
-        let toggleItem = menu.add(awake ? L("Allow Sleep") : L("Stay Awake"), #selector(toggle), target: self)
+        let toggleItem = menu.add(awakeByHand ? L("Allow Sleep") : L("Stay Awake"), #selector(toggle), target: self)
         toggleItem.keyEquivalent = "i"
         toggleItem.keyEquivalentModifierMask = [.control, .option, .command]
 
@@ -658,14 +666,20 @@ final class App: NSObject, NSApplicationDelegate {
             entry.image?.size = NSSize(width: 16, height: 16)
         }
         menu.setSubmenu(apps, for: menu.addItem(withTitle: L("Stay Awake While App Runs"), action: nil, keyEquivalent: ""))
+        menu.addItem(.separator())
+
         if Claude.isInstalled {
             menu.add(L("Stay Awake While Claude Works"), #selector(toggleFollowClaude), target: self, checked: Settings.followClaude)
-            let delays = NSMenu()
-            for delay in Settings.claudeDelayChoices {
-                delays.add(delay == 0 ? "30 s" : formatDuration(TimeInterval(delay * 60)), #selector(setClaudeDelay(_:)), target: self,
-                           checked: delay == Settings.claudeDelay).tag = delay
+            let delayItem = menu.addItem(withTitle: L("Stay Awake After Claude Finishes"), action: nil, keyEquivalent: "")
+            if Settings.followClaude {  // without a submenu, it shows as unavailable
+                let delays = NSMenu()
+                for delay in Settings.claudeDelayChoices {
+                    delays.add(delay == 0 ? "30 s" : formatDuration(TimeInterval(delay * 60)), #selector(setClaudeDelay(_:)), target: self,
+                               checked: delay == Settings.claudeDelay).tag = delay
+                }
+                menu.setSubmenu(delays, for: delayItem)
             }
-            menu.setSubmenu(delays, for: menu.addItem(withTitle: L("Stay Awake After Claude Finishes"), action: nil, keyEquivalent: ""))
+            menu.addItem(.separator())
         }
 
         if dimmed {

@@ -24,8 +24,11 @@ terminal.
 
 Sleep comes back 30 seconds after the last session finishes, or after the time chosen in
 **Stay Awake After Claude Finishes**, up to an hour, which leaves time to reply remotely. If
-the lid is closed by then and no external display is connected, the Mac goes to sleep. If you
-turn the awake mode off by hand, it stays off until the current work ends.
+the lid is closed by then and no external display is connected, the Mac goes to sleep.
+
+The option is independent of the rest: while it's checked, it applies whatever you choose by
+hand, and only low battery, heat or unchecking it overrides it. Whatever you turned on by hand
+keeps going after Claude finishes.
 
 ## Safety
 

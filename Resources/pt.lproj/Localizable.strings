@@ -27,5 +27,6 @@
 "Insomnia is in the menu bar" = "O Insomnia está na barra de menus";
 "Click ∞ for the menu, right-click to stay awake." = "Clique em ∞ para o menu, clique direito para manter acordado.";
 "Stay Awake While Claude Works" = "Manter ativo enquanto o Claude trabalha";
-"Awake while Claude works" = "Ativo enquanto o Claude trabalha";
+"Claude is working" = "O Claude está a trabalhar";
+"No Claude session working: awake for %@ more" = "Nenhuma sessão do Claude ativa: ativo mais %@";
 "Stay Awake After Claude Finishes" = "Manter ativo depois de o Claude terminar";
